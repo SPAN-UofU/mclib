@@ -1,0 +1,8 @@
+extension of Thomas' Measurement and Control Library
+
+Supports:
+Agilent E3631A
+Agilent A34410A
+Rigol DS1000E/D
+Rigol DP1000A (DP1116A / DP1308A)
+Rigol DG4102
