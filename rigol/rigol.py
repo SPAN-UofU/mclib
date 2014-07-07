@@ -6,7 +6,7 @@ import time
 class usbtmc:
     """Simple implementation of a USBTMC device driver, in the style of visa.h"""
 
-    DEBUG = False
+    DEBUG = True
 
     def __init__(self, device):
         self.device = device
@@ -198,18 +198,53 @@ class RigolScope:
     def local(self):
         self.meas.write(":KEY:FORC")
 
+class RigolPS:
+    """Class to control DP1116A & DP1308A"""
+
+    def __init__(self, device):
+        self.meas = usbtmc(device)
+
+    def reset(self):
+        """Reset the instrument"""
+        self.meas.write("*RST")
+
+    def getName(self):
+        self.meas.write("*IDN?")
+        return self.meas.readline()
+
+class RigolDG:
+    """Class to control DG4102"""
+
+    def __init__(self, device):
+        self.meas = usbtmc(device)
+
+    def reset(self):
+        """Reset the instrument"""
+        self.meas.write("*RST")
+
+    def getName(self):
+        self.meas.write("*IDN?")
+        return self.meas.readline()
 
 if __name__ == "__main__":
-    rs = RigolScope("/dev/usbtmc0")
-    print "Device Name: ", rs.getName()
-    print "Resetting Device"
-    rs.reset()
-    print "Stop"
-    rs.stop()
-    print "Configure for single acquisition"
-    rs.triggerSingleEdge()
-    print "Start"
-    rs.run()
+    #rs = RigolScope("/dev/usbtmc0")
+    #print "Device Name: ", rs.getName()
+    #print "Resetting Device"
+    #rs.reset()
+    #print "Stop"
+    #rs.stop()
+    #print "Configure for single acquisition"
+    #rs.triggerSingleEdge()
+    #print "Start"
+    #rs.run()
 
+    dg = RigolDG("/dev/usbtmc2")
+    print "Device Name: ", dg.getName()
+
+    ps1 = RigolPS("/dev/usbtmc3")
+    print "Device Name: ", ps1.getName()
+
+    ps2 = RigolPS("/dev/usbtmc4")
+    print "Device Name: ", ps2.getName()
 
 

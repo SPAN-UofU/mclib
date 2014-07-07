@@ -3,7 +3,7 @@ import time
 import struct
 
 class RIGOL:
-    PORT = 5025
+    PORT = 5555
 
     def __init__(self, host, port=PORT):
         self.host = host
@@ -32,6 +32,14 @@ class RIGOL:
             print "*%s*"%(c,)
             return ""
 
+    def getID(self):
+        self.s.send("*IDN?\n")
+        c = self.s.recv(1)
+        print c
 
 if __name__ == "__main__":
-    r = RIGOL("192.168.1.171")
+    r = RIGOL("192.168.2.4")
+    #r.setOutput(1)
+    while(1):
+        #r.getCurrent()
+        r.getID()
