@@ -201,8 +201,15 @@ class RigolScope:
 class RigolPS:
     """Class to control DP1116A & DP1308A"""
 
-    def __init__(self, device):
+    MODELS = ["DP1116A", "DP1308A"]
+    CHANNELS = ["P25V", "N25V", "P6V"]
+
+    def __init__(self, device, model):
         self.meas = usbtmc(device)
+        if model in self.MODELS:
+            self.model = model
+        else:
+            print "ERROR: Supports DP1116A or DP1308A only!"
 
     def reset(self):
         """Reset the instrument"""
@@ -211,6 +218,75 @@ class RigolPS:
     def getName(self):
         self.meas.write("*IDN?")
         return self.meas.readline()
+
+    def getSettings(self, channel=""):
+        if channel == "":
+            self.meas.write("APPL?")
+        else:
+            self.meas.write("APPL? %s"%channel)
+        return self.meas.readline()
+
+    def setQuickSettings(self, voltage, current, channel=""):
+        if self.model == "DP1116A":
+            #set voltage and current
+            self.meas.write("APPL %s,%s"%(voltage, current))
+            #check if it's correct by polling
+            correct = "%.3fV,%.3fA"%(float(voltage),float(current))
+            m = ""
+            while m.strip() != correct:
+                m = self.getSettings()
+            return m
+        else:
+            if channel != "":
+                #set voltage and current
+                self.meas.write("APPL %s,%s,%s"%(channel, voltage, current))
+                #check if it's correct by polling
+                if channel == "N25V":
+                    correct = "%s,Limit,-%.4fV,%.4fA"%(channel,float(voltage),float(current))
+                else:
+                    correct = "%s,Limit,%.4fV,%.4fA"%(channel,float(voltage),float(current))
+                m = ""
+                while m.strip() != correct:
+                    m = self.getSettings()
+                    print correct
+                    print m
+                return m
+            else:
+                return "ERROR: Which channel? P25V, N25V or P6V?"
+
+    def setRange(self, voltage):
+        if model == "DP1116A":
+            #find out which range
+            if voltage <= 16:
+                v = "16V"
+                range = "16V/10A"
+            else:
+                v = "32V"
+                range = "32V/5A"
+
+            #set range
+            self.meas.write("OUTP:RANG %s"%v)
+
+            #poll to check if it's correct
+            m = ""
+            while m.strip() != range:
+                self.meas.write("OUTP:RANG?")
+                m = self.meas.readline()
+                print m + " " + range
+            return m
+        else:
+            return "ERROR: Doesn't have this functionality"
+
+    def setOutput(self, state, channel=""):
+        if state == 1:
+            s = "ON"
+        else:
+            s = "OFF"
+
+        if channel == "":
+            self.meas.write("OUTP:STAT %s"%s)
+        else:
+            self.meas.write("OUTP:STAT %s,%s"%(channel, s))
 
 class RigolDG:
     """Class to control DG4102"""
@@ -226,6 +302,10 @@ class RigolDG:
         self.meas.write("*IDN?")
         return self.meas.readline()
 
+    def getSettings(self):
+        self.meas.write("APPL?")
+        return self.meas.readline()
+
 if __name__ == "__main__":
     #rs = RigolScope("/dev/usbtmc0")
     #print "Device Name: ", rs.getName()
@@ -238,13 +318,32 @@ if __name__ == "__main__":
     #print "Start"
     #rs.run()
 
-    dg = RigolDG("/dev/usbtmc2")
-    print "Device Name: ", dg.getName()
+    #dg = RigolDG("/dev/usbtmc4")
+    #print "DG4102"
+    #print "Device Name: ", dg.getName()
 
-    ps1 = RigolPS("/dev/usbtmc3")
-    print "Device Name: ", ps1.getName()
+    #ps1 = RigolPS("/dev/usbtmc3", "DP1116A")
+    #print "DP1116A"
+    #print "Device Name: ", ps1.getName()
+    #ps1.reset()
+    #print ps1.getSettings()
+    #print ps1.setRange(3.3)
+    #print ps1.setQuickSettings(3.3,1)
+    #ps1.setOutput(1)
 
-    ps2 = RigolPS("/dev/usbtmc4")
+    ps2 = RigolPS("/dev/usbtmc2", "DP1308A")
+    print "DP1308A"
     print "Device Name: ", ps2.getName()
-
-
+    ps2.reset()
+    channel = "P6V"
+    print ps2.getSettings(channel)
+    print ps2.setQuickSettings(3.3,1,channel)
+    #ps2.setOutput(1,channel)
+    channel = "P25V"
+    print ps2.setQuickSettings(3.3,0.5,channel)
+    #ps2.setOutput(1,channel)
+    channel = "N25V"
+    print ps2.setQuickSettings(3.3,0.5,channel)
+    ps2.setOutput(1,"P6V")
+    ps2.setOutput(1,"P25V")
+    ps2.setOutput(1,"N25V")
